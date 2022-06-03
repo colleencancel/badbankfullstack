@@ -1,0 +1,176 @@
+import React, {useState, useEffect} from 'react';
+import { useNavigate } from 'react-router-dom';
+import { auth, db, logout } from "./firebase";
+import { query, collection, getDocs, where } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
+
+import UserContext from './UserContext';
+import Card from './Card';
+
+
+function Deposit() {
+  const [show, setShow] = React.useState(true);
+  const [status, setStatus] = React.useState('');
+  const [deposit, setDeposit] = React.useState(0);
+  
+  const [account, setAccount] = React.useState({});
+ 
+  //const ctx = React.useContext(UserContext); 
+  //const users = ctx.users;;  
+  
+  //let balance = users[users.length-1].balance;
+
+  //function Dashboard() {
+    const [user, loading, error] = useAuthState(auth);
+    const [name, setName] = useState("");
+    const navigate = useNavigate();
+    const fetchUserName = async () => {
+      try {
+        const q = query(collection(db, "users"), where("uid", "==", user?.uid));
+       const doc = await getDocs(q);
+        const data = doc.docs[0].data();
+      setName(data.name);
+      } catch (err) {
+        console.error(err);
+        alert("An error occured while fetching user data");
+      }
+    };
+    useEffect(() => {
+      if (loading) return;
+      if (!user) return navigate("/");
+      fetchUserName();
+    }, [user, loading])
+
+
+  //function getAccount() {
+    //const url = `/account/find/${email}`;
+    //(async () => {
+      //var res = await fetch(url);
+      //var data = await res.json();
+      //setAccount(data[0]);
+   // })();  
+  //}
+
+  function validate(field){
+    if (Number(field) ===0) {
+        setStatus('Error:  Please Enter Amount');
+        setTimeout(() => setStatus(''),3000);
+        return false;
+    }
+    return true;
+    }  
+
+  function validateNumber(field) {
+    if (isNaN(parseFloat(field))) {
+      setStatus('Error: Please enter a dollar amount');
+      setTimeout(() => setStatus(''),3000);
+      return false;
+    }
+    return true;
+    }
+
+    function validatePositiveNumber(field) {
+      if (Number(field) <0) {
+            setStatus('Error: Please enter a positive dollar amount');
+            setTimeout(() => setStatus(''),3000);
+            return false;
+          }
+            return true;
+          }
+
+function handleDeposit(){
+    if (!validate(deposit, 'deposit')){
+    alert('Deposit amount required');
+    return;
+  }
+
+  if(!validateNumber(deposit)) {
+    alert('Deposit amount must be a number');
+    return;
+  }
+
+  if(!validatePositiveNumber(deposit)) {
+    alert('Deposit amount must positive');
+    return;
+  }
+  
+  //let newBalance = balance + Number(deposit);
+
+  //users[users.length-1].balance = newBalance;
+
+  setShow(false);
+  //return newBalance;
+ } 
+  
+ //function handleSubmit() {
+  //if (!validate(deposit) || (!validatePositiveNumber(deposit)))
+    //return;
+ // const url = `/account/update/${email}/${deposit}`;
+  //(async () => {
+   // var res = await fetch(url, { method: 'PUT' });
+   // var data = await res.json();
+  //})();
+  //getAccount();
+ // setShow(false);
+//};
+
+function clearForm(){
+  setDeposit(0);
+  setShow(true);
+};
+
+return (
+  <>
+      <div className="card text-center">
+      <div className="card-header">
+        <a>Success! Logged in as <strong>{name}</strong> </a> 
+           <button className="dashboard__btn" onClick={logout}>Logout</button>
+      </div>
+      <nav className="navbar navbar-expand-lg navbar-dark bg-secondary">
+          <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span className="navbar-toggler-icon"></span>
+          </button>
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav">
+          <li className="nav-item">
+             <a className="nav-link" href="#/dashboard/">Profile</a>
+            </li>
+            <li className="nav-item">
+             <a className="nav-link" href="#/deposit/">Deposit</a>
+            </li>
+            <li className="nav-item">
+             <a className="nav-link" href="#/withdraw/">Withdraw</a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link" href="#/balance/">Balance</a>
+            </li>
+          </ul>
+        </div>
+        </nav>
+      </div> 
+ 
+
+  <Card
+    bgcolor="secondary"
+    header="BadBank Deposit Page"
+    status={status}
+    body={show ? (  
+        <>
+          Your Current Balance is: 
+          <br/>
+          Deposit Amount<br/>
+          <input type="input" className="form-control" id="DepositAmount" placeholder="Deposit Amount" value={deposit} onChange={e => setDeposit(e.currentTarget.value)}/><br/>
+          <button type="submit" className="btn btn-light" disabled={deposit ==="" || deposit === 0} onClick={handleDeposit}>Make Deposit</button><br/>
+          </>
+        ):(
+          <>
+          <h5>Success, you made a ${deposit} deposit!</h5>
+          <button type="submit" className="btn btn-light" onClick={clearForm}>Make Another Deposit</button>
+        </>
+     )}
+    />
+    </>
+  )
+}
+
+  export default Deposit;
